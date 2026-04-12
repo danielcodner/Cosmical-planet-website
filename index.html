@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmical — Explore the Solar System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --space-darkest: #050312;
+      --space-deep: #0a0620;
+      --space-purple: #1a0a4e;
+      --space-mid: #2d1b69;
+      --amber: #f4a230;
+      --amber-glow: rgba(244,162,48,0.4);
+    }
+
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--space-darkest);
+      color: white;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── STARFIELD ── */
+    #starField {
+      position: fixed; inset: 0;
+      z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--d) ease-in-out infinite var(--delay);
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: var(--lo); transform: scale(1); }
+      50%      { opacity: 1;          transform: scale(1.3); }
+    }
+
+    /* ── BACKGROUND LAYERS ── */
+    .cosmos-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 100% 35% at 50% 0%,
+          rgba(255,100,0,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 80% 55% at 20% 50%,
+          rgba(80,30,200,0.14) 0%, transparent 65%),
+        radial-gradient(ellipse 90% 60% at 80% 70%,
+          rgba(20,50,200,0.12) 0%, transparent 65%),
+        linear-gradient(180deg,
+          #0a0620 0%,
+          #1a0a4e 25%,
+          #2d1b69 55%,
+          #1e1060 78%,
+          #080420 100%);
+    }
+
+    /* ── GRAIN TEXTURE ── */
+    .grain {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      opacity: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 14px 20px;
+      background: linear-gradient(180deg, rgba(5,3,18,0.1) 0%, transparent 100%);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+    }
+    .nav-inner {
+      max-width: 520px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-btn {
+      background: none; border: none; color: white; cursor: pointer;
+      padding: 8px; border-radius: 50%;
+      transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-btn:hover  { opacity: 0.75; transform: scale(1.1); background: rgba(255,255,255,0.06); }
+    .nav-btn:active { transform: scale(0.94); }
+    .nav-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+    /* ── DRAWER ── */
+    .drawer {
+      position: fixed; top: 0; left: 0; width: 280px; height: 100%;
+      z-index: 300;
+      background: linear-gradient(160deg, #0a0620 0%, #2d1b69 100%);
+      border-right: 1px solid rgba(150,120,255,0.18);
+      padding: 80px 28px 32px;
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform 0.42s cubic-bezier(0.22,1,0.36,1), visibility 0s linear 0.42s;
+    }
+    .drawer.open {
+      transform: translateX(0);
+      visibility: visible;
+      transition: transform 0.42s cubic-bezier(0.22,1,0.36,1), visibility 0s linear 0s;
+    }
+    .drawer-overlay {
+      position: fixed; inset: 0; z-index: 299;
+      background: rgba(0,0,0,0.55);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .drawer-overlay.open { opacity: 1; pointer-events: all; }
+    .drawer-close {
+      position: absolute; top: 20px; right: 20px;
+      background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.6); color: white;
+      cursor: pointer; width: 40px; height: 40px; border-radius: 50%;
+      font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .drawer-close:hover { background: rgba(255,255,255,0.15); transform: rotate(90deg); }
+    .drawer nav a {
+      display: block; color: white; text-decoration: none;
+      font-size: 17px; font-weight: 600; padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      letter-spacing: 0.04em;
+      transition: color 0.2s ease, padding-left 0.2s ease;
+    }
+    .drawer nav a:hover { color: var(--amber); padding-left: 6px; }
+    .drawer nav a:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+
+    /* ── MAIN ── */
+    main {
+      position: relative; z-index: 10;
+      max-width: 520px; margin: 0 auto;
+      padding-bottom: 60px;
+      overflow-x: clip;
+    }
+
+    /* ── SUN HERO ── */
+    .sun-hero {
+      padding-top: 20px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .sun-viewport {
+      width: 100%; position: relative;
+      height: 252px;
+      display: flex; justify-content: center;
+    }
+    .sun-corona {
+      position: absolute; top: -48px; left: 50%;
+      transform: translateX(-50%);
+      width: 456px; height: 456px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(255,140,0,0.22) 0%,
+        rgba(255,90,0,0.1) 40%,
+        transparent 68%);
+      animation: coronaPulse 3.5s ease-in-out infinite;
+    }
+    @keyframes coronaPulse {
+      0%,100% { transform: translateX(-50%) scale(1);   opacity: 0.8; }
+      50%      { transform: translateX(-50%) scale(1.06); opacity: 1; }
+    }
+    .sun-halo-1, .sun-halo-2 {
+      position: absolute; top: -30px; left: 50%;
+      border-radius: 50%; transform: translateX(-50%);
+      border: 1px solid rgba(255,150,40,0.2);
+      animation: coronaPulse 3.5s ease-in-out infinite;
+    }
+    .sun-halo-1 { width: 372px; height: 372px; }
+    .sun-halo-2 { width: 414px; height: 414px; border-color: rgba(255,130,20,0.1); animation-delay: 0.4s; }
+    .sun-body {
+      position: absolute; top: -86px; left: 50%;
+      transform: translateX(-50%);
+      width: 322px; height: 322px; border-radius: 50%;
+      overflow: hidden; z-index: 5;
+      box-shadow:
+        0 0 60px 20px rgba(255,130,0,0.45),
+        0 0 120px 60px rgba(255,80,0,0.22),
+        0 20px 40px rgba(0,0,0,0.5);
+      animation: sunGlow 3s ease-in-out infinite;
+    }
+    @keyframes sunGlow {
+      0%,100% { box-shadow: 0 0 60px 20px rgba(255,130,0,0.45), 0 0 120px 60px rgba(255,80,0,0.22), 0 20px 40px rgba(0,0,0,0.5); }
+      50%      { box-shadow: 0 0 80px 32px rgba(255,160,0,0.6),  0 0 160px 80px rgba(255,100,0,0.3), 0 20px 40px rgba(0,0,0,0.5); }
+    }
+    .sun-spin {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        #ff4500 0%, #ff6b00 12%, #ff9800 22%,
+        #ffbe00 33%, #ff9000 44%, #ff5500 55%,
+        #ff7a00 66%, #ffaa00 77%, #ff6200 88%,
+        #ff4500 100%);
+      animation: spinSun 22s linear infinite;
+    }
+    @keyframes spinSun {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .sun-highlight {
+      position: absolute; inset: 0; border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,230,140,0.55) 0%, transparent 52%),
+        radial-gradient(circle at 72% 65%, rgba(255,100,0,0.35) 0%, transparent 38%);
+    }
+    .sun-spot-1 {
+      position: absolute; top: 32%; left: 22%;
+      width: 28px; height: 18px;
+      background: rgba(160,50,0,0.5); border-radius: 50%;
+      filter: blur(4px);
+    }
+    .sun-spot-2 {
+      position: absolute; top: 58%; left: 68%;
+      width: 20px; height: 14px;
+      background: rgba(150,40,0,0.45); border-radius: 50%;
+      filter: blur(3px);
+    }
+
+    /* ── PLANET SECTION ── */
+    .planet-section {
+      padding: 44px 20px 0;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .divider {
+      width: calc(100% - 40px); height: 1px; margin-top: 44px;
+      background: linear-gradient(90deg, transparent, rgba(150,120,255,0), transparent);
+    }
+
+    /* ── PLANET CARD ── */
+    .planet-card {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .planet-card:hover  { transform: scale(1.06); }
+    .planet-card:active { transform: scale(0.97); }
+    .planet-card:focus-visible { outline: 2px solid var(--amber); outline-offset: 8px; border-radius: 50%; }
+    .planet-card:hover .ring { opacity: 0.85 !important; }
+
+    .ring {
+      position: absolute; border-radius: 50%;
+      border: 1.5px solid; transition: opacity 0.3s;
+    }
+
+    .planet-body {
+      border-radius: 50%;
+      box-shadow:
+        inset -10px -8px 24px rgba(0,0,0,0.55),
+        0 0 0px 0px transparent;
+    }
+    .planet-float { animation: float 4.2s ease-in-out infinite; }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-13px); }
+    }
+
+    /* ── LABEL PILL ── */
+    .planet-label {
+      margin-top: 18px;
+      background: rgba(20,10,60,0.50);
+      border: 0px solid rgba(150,120,255,0.28);
+      backdrop-filter: blur(4px);
+      border-radius: 100px;
+      padding: 4px 16px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700;
+      letter-spacing: 0.13em;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, transform 0.25s;
+    }
+    .planet-label:hover {
+      background: rgba(40,20,100,0.9);
+      border-color: rgba(200,160,255,0.5);
+      transform: translateY(-1px);
+    }
+    .planet-label:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+    .planet-subtitle {
+      margin-top: 10px;
+      font-size: 14px; color: rgba(170,150,255,0.7);
+      text-align: center; letter-spacing: 0.04em;
+    }
+
+    /* ── MORE BUTTON ── */
+    .btn-more {
+      margin-top: 36px;
+      background: linear-gradient(135deg, #f4a230 0%, #e8701a 100%);
+      border-radius: 100px; border: none;
+      padding: 13px 36px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: white; cursor: pointer;
+      box-shadow: 0 4px 22px rgba(244,162,48,0.45), 0 2px 8px rgba(0,0,0,0.3);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+    }
+    .btn-more:hover {
+      transform: scale(1.06) translateY(-2px);
+      box-shadow: 0 8px 32px rgba(244,162,48,0.6), 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .btn-more:active { transform: scale(0.97); }
+    .btn-more:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+
+    /* ── FADE IN ── */
+    .reveal {
+      opacity: 0; transform: translateY(36px);
+      transition: opacity 0.75s ease, transform 0.75s ease;
+    }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    /* ── DETAIL PANEL ── */
+    .panel-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.38s ease;
+    }
+    .panel-overlay.open { opacity: 1; pointer-events: all; }
+    .panel-bg {
+      position: absolute; inset: 0;
+      background: rgba(3,2,14,0.6);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .panel-card {
+      position: relative; z-index: 1;
+      background: linear-gradient(175deg, rgba(40,22,95,0.97) 0%, rgba(18,8,60,0.99) 100%);
+      border: 1px solid rgba(150,120,255,0.18);
+      border-radius: 24px;
+      max-width: 420px; width: 92%;
+      max-height: 88vh; overflow-y: auto;
+      padding: 36px 28px 32px;
+      box-shadow:
+        0 24px 80px rgba(0,0,0,0.65),
+        0 0 60px rgba(100,60,200,0.18);
+      transform: translateY(28px) scale(0.96);
+      transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .panel-overlay.open .panel-card { transform: translateY(0) scale(1); }
+    .panel-close {
+      position: absolute; top: 14px; right: 14px;
+      background: rgba(255,255,255,0.07); border: none; color: white;
+      width: 32px; height: 32px; border-radius: 50%;
+      font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .panel-close:hover { background: rgba(255,255,255,0.14); transform: rotate(90deg); }
+    .panel-close:focus-visible { outline: 2px solid var(--amber); }
+
+    .stat-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: rgba(150,120,255,0.12);
+      border-radius: 12px; overflow: hidden;
+      margin: 24px 0;
+    }
+    .stat-cell {
+      background: rgba(8,5,28,0.65);
+      padding: 14px 16px;
+    }
+    .stat-label {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.14em; margin-bottom: 4px;
+    }
+    .stat-value { font-size: 16px; font-weight: 400; color: white; }
+    .fact-box {
+      background: rgba(244,162,48,0.07);
+      border: 1px solid rgba(244,162,48,0.18);
+      border-radius: 12px; padding: 8px 16px 14px 16px;
+    }
+    .fact-tag {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.12em; color: var(--amber);
+      margin-bottom: 6px;
+      margin-top: 4px;
+    }
+
+    /* ── SHOOTING STARS ── */
+    .shooting-star {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--len);
+      height: 1.5px;
+      border-radius: 100px;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(200,220,255,0.55) 40%, rgba(255,255,255,0.95) 100%);
+      transform-origin: right center;
+      transform: translate(var(--sx), var(--sy)) rotate(var(--angle));
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2;
+      animation: shoot var(--dur) ease-out forwards;
+    }
+    @keyframes shoot {
+      0%   { opacity: 0;    transform: translate(var(--sx), var(--sy)) rotate(var(--angle)); }
+      8%   { opacity: var(--peak); }
+      100% { opacity: 0;    transform: translate(var(--ex), var(--ey)) rotate(var(--angle)); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    ::-webkit-scrollbar-thumb { background: rgba(150,120,255,0.28); border-radius: 2px; }
+
+    /* Saturn ring system */
+    .saturn-ring {
+      position: absolute;
+      border-radius: 50%;
+      border-style: solid;
+      border-color: transparent;
+      top: 50%; transform-origin: center center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Cosmos background -->
+<div class="cosmos-bg"></div>
+
+<!-- Grain texture -->
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="grain">
+    <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#grain)"/>
+</svg>
+
+<!-- Star field -->
+<div id="starField"></div>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-inner">
+    <!-- Hamburger -->
+    <button class="nav-btn" id="menuBtn" aria-label="Open menu">
+      <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+        <rect width="22" height="2.5" rx="1.25" fill="white"/>
+        <rect y="6.5" width="22" height="2.5" rx="1.25" fill="white"/>
+        <rect y="13" width="22" height="2.5" rx="1.25" fill="white"/>
+      </svg>
+    </button>
+
+    <!-- Logo SVG -->
+    <svg width="118" height="21" viewBox="0 0 143 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Cosmical">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M3.12285 8.63965C5.19181 6.73191 7.66995 6.00581 10.4139 6.27344C13.1794 6.54312 15.3963 7.83926 17.0535 10.1562C17.3415 10.5589 17.3458 10.7667 16.8738 11.0146C16.0944 11.424 15.3517 11.909 14.6004 12.374C14.3807 12.5101 14.2591 12.5476 14.076 12.2734C12.7063 10.2229 10.3154 9.39939 7.77129 10.0703C5.53014 10.6615 3.94435 12.5963 3.64629 15.0391C3.40773 16.9945 3.74491 18.7777 4.98027 20.3262C7.17556 23.0772 12.2386 23.0257 14.0955 19.9072C14.2213 19.6961 14.3165 19.6549 14.534 19.791C15.3568 20.3054 16.1849 20.8124 17.0281 21.29C17.3481 21.4714 17.3338 21.623 17.1502 21.9004C15.8297 23.8954 14.0159 25.1379 11.7596 25.7217C11.0214 25.9124 10.268 25.9587 9.42656 25.999C4.41632 26.0682 0.326907 22.1271 0.0232393 16.8555C-0.162662 13.625 0.757357 10.8206 3.12285 8.63965ZM95.2801 8.69629C97.365 6.74226 99.8699 6.00283 102.653 6.27734C105.4 6.54852 107.609 7.83001 109.245 10.1377C109.624 10.673 109.618 10.6782 109.066 11.0117C108.31 11.4686 107.552 11.9214 106.8 12.3838C106.602 12.5052 106.478 12.5675 106.308 12.3008C105.146 10.4785 103.423 9.78236 101.393 9.86621C98.529 9.98458 96.5508 11.7027 95.9412 14.5908C95.3292 17.4914 96.417 20.6415 99.157 21.793C101.152 22.6312 103.115 22.5397 104.973 21.3311C105.49 20.995 105.926 20.5603 106.239 20.0215C106.416 19.7159 106.549 19.6459 106.863 19.8496C107.634 20.3494 108.421 20.8237 109.221 21.2734C109.555 21.4614 109.557 21.6156 109.355 21.918C107.913 24.0733 105.928 25.3404 103.454 25.833C102.877 25.948 102.292 25.9508 101.737 25.999C96.5905 26.0372 92.55 22.1283 92.241 16.833C92.0552 13.645 92.9626 10.8684 95.2801 8.69629ZM30.4978 6.20508C35.7324 6.2533 39.9344 10.6872 39.9002 16.127C39.8653 21.6506 35.6117 26.0428 30.3416 25.998C25.0206 25.9528 20.8151 21.5372 20.8621 16.0449C20.91 10.4943 25.1583 6.15596 30.4978 6.20508ZM48.3055 6.48047C51.5476 5.52761 54.9021 6.98495 56.5203 10.0332C56.6887 10.3505 56.7336 10.5157 56.3572 10.7168C55.5802 11.1316 54.8284 11.601 54.0867 12.0811C53.7774 12.2809 53.6586 12.2258 53.4871 11.9023C52.6181 10.2616 51.181 9.58254 49.4197 9.94141C48.5809 10.1123 47.9424 10.7004 47.8279 11.4072C47.6861 12.2854 47.9696 12.873 48.7967 13.3916C49.4639 13.8098 50.2027 14.0538 50.9383 14.3018C52.0497 14.6766 53.1687 15.0281 54.2293 15.5488C56.3735 16.602 57.4354 18.3128 57.2244 20.792C57.0296 23.0774 55.8047 24.559 53.7937 25.4111C52.7769 25.8421 51.7069 25.9723 50.3641 25.9902C48.2404 25.9618 46.1115 25.3121 44.5281 23.335C44.1208 22.8263 43.8139 22.2558 43.5555 21.6514C43.4412 21.3839 43.4702 21.2499 43.7225 21.1025C44.56 20.6139 45.3897 20.1094 46.2098 19.5898C46.4539 19.4354 46.5553 19.4823 46.658 19.7402C47.7379 22.4513 50.6249 22.6795 52.4432 22.0215C53.1092 21.7804 53.5247 21.2984 53.615 20.5488C53.7107 19.7519 53.3957 19.17 52.7527 18.7578C52.0594 18.3128 51.2898 18.0549 50.5174 17.8076C49.4166 17.4554 48.3025 17.142 47.2586 16.625C45.5931 15.8004 44.4062 14.564 44.2205 12.5781C43.9388 9.56647 45.4717 7.31328 48.3055 6.48047ZM75.9002 6.59082L78.3768 6.59375C78.8128 6.57391 78.9449 6.67196 78.9422 7.1582C78.9197 11.3885 78.9214 23.4044 78.9373 25.1816C78.9401 25.5192 78.8684 25.6351 78.5203 25.624L75.8875 25.625C75.4527 25.6424 75.3131 25.5492 75.3162 25.0576C75.3408 21.3962 75.3299 17.7348 75.3299 14.0732V13.3408C75.163 13.6116 75.0748 13.7485 74.993 13.8887C73.4772 16.4854 71.9624 19.083 70.4471 21.6797C70.2696 21.9837 70.1325 22.1407 69.9832 22.1533C69.8488 22.1405 69.712 21.9835 69.535 21.6797C68.0194 19.083 66.5046 16.4854 64.9891 13.8887C64.9071 13.7485 64.819 13.6116 64.6521 13.3408V14.0732C64.6521 17.7348 64.6414 21.3962 64.6658 25.0576C64.6691 25.5494 64.5288 25.6425 64.0936 25.625L61.4617 25.624C61.1137 25.6351 61.0417 25.5192 61.0447 25.1816C61.0606 23.4044 61.0624 11.3885 61.0398 7.1582C61.0372 6.67196 61.169 6.57391 61.6053 6.59375L64.0818 6.59082C64.6209 6.55669 64.8956 6.76549 65.1629 7.23438C66.7387 9.99886 68.3501 12.7417 69.991 15.5625C71.6317 12.7417 73.2433 9.99885 74.8191 7.23438C75.0866 6.76557 75.3612 6.55669 75.9002 6.59082ZM86.9695 6.59473C87.3167 6.58504 87.3909 6.70312 87.3895 7.04199C87.3777 10.0806 87.3826 13.1194 87.3826 16.1582C87.3826 19.126 87.3692 22.0942 87.3963 25.0615C87.4008 25.5533 87.2584 25.6418 86.827 25.625C85.9335 25.5902 85.0377 25.6025 84.1434 25.6211C83.8509 25.6273 83.765 25.5397 83.7654 25.2354C83.7733 19.158 83.7738 13.0803 83.7635 7.00293C83.7629 6.65494 83.8815 6.5919 84.1824 6.59766C85.111 6.61536 86.0411 6.62075 86.9695 6.59473ZM121.801 6.59863C122.093 6.59522 122.25 6.65808 122.358 6.98047C124.401 13.0569 126.457 19.1281 128.519 25.1973C128.621 25.4964 128.66 25.6324 128.263 25.623C127.197 25.5981 126.13 25.601 125.063 25.624C124.777 25.6302 124.682 25.5058 124.607 25.2637C124.327 24.3544 124.027 23.451 123.751 22.54C123.672 22.281 123.557 22.1877 123.283 22.1895C122.187 22.1961 121.091 22.1992 119.995 22.1992C118.899 22.1992 117.803 22.1961 116.707 22.1895C116.433 22.1879 116.317 22.2812 116.239 22.54C115.964 23.451 115.663 24.3544 115.383 25.2637C115.308 25.5057 115.214 25.6302 114.928 25.624C113.861 25.601 112.793 25.5981 111.726 25.623C111.33 25.6324 111.37 25.4964 111.471 25.1973C113.533 19.1282 115.589 13.0568 117.632 6.98047C117.74 6.65811 117.897 6.59523 118.189 6.59863H121.801ZM135.442 6.59277C135.883 6.57336 136.011 6.67876 136.01 7.16309C135.988 11.8542 135.997 16.5453 135.997 21.2363C135.997 21.3429 136.01 21.4512 135.995 21.5557C135.942 21.9349 136.103 22.032 136.458 22.0293C138.436 22.0131 140.415 22.0429 142.392 22.0068C142.908 21.9974 143.021 22.1534 142.997 22.6533C142.955 23.5218 142.975 24.3942 142.991 25.2646C142.996 25.5399 142.924 25.6219 142.65 25.6211C139.347 25.6113 136.044 25.6082 132.741 25.624C132.363 25.6257 132.383 25.4293 132.384 25.165C132.387 22.1446 132.386 19.124 132.386 16.1035C132.386 13.1005 132.393 10.0968 132.376 7.09375C132.373 6.6914 132.476 6.58044 132.863 6.59473C133.722 6.62607 134.584 6.63051 135.442 6.59277ZM30.3904 9.84277C27.0159 9.82908 24.4555 12.5328 24.4568 16.1084C24.4583 19.6661 26.988 22.3168 30.3768 22.3125C33.769 22.308 36.2862 19.6587 36.282 16.0967C36.2777 12.5313 33.7576 9.85643 30.3904 9.84277ZM118.099 16.7842C117.931 17.3036 117.761 17.823 117.591 18.3418C117.514 18.5741 117.538 18.6883 117.829 18.6855C118.551 18.6785 119.273 18.6756 119.995 18.6758C120.717 18.6756 121.44 18.6785 122.162 18.6855C122.452 18.6882 122.477 18.574 122.4 18.3418C122.229 17.823 122.059 17.3036 121.89 16.7842C121.272 14.8754 120.654 12.9663 119.995 10.9297C119.335 12.9662 118.718 14.8754 118.099 16.7842ZM85.5799 0C85.5799 0 86.2809 1.86347 88.1492 2.65332C86.2809 3.44317 85.5799 5.30664 85.5799 5.30664C85.5723 5.2866 84.8696 3.43891 83.0115 2.65332C84.8699 1.86763 85.5725 0.0195535 85.5799 0Z" fill="white"/>
+    </svg>
+
+    <!-- Search -->
+    <button class="nav-btn" aria-label="Search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ── DRAWER ── -->
+<div class="drawer" id="drawer">
+  <button class="drawer-close" id="drawerClose" aria-label="Close menu">✕</button>
+  <p style="font-family:'Sora',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;color:rgba(200,180,255,0.45);text-transform:uppercase;margin-bottom:20px">Explore Planets</p>
+  <nav>
+    <a href="#sun"     tabindex="0">☀&nbsp; Sun</a>
+    <a href="#mercury" tabindex="0">Mercury</a>
+    <a href="#venus"   tabindex="0">Venus</a>
+    <a href="#earth"   tabindex="0">Earth</a>
+    <a href="#mars"    tabindex="0">Mars</a>
+    <a href="#jupiter" tabindex="0">Jupiter</a>
+    <a href="#saturn"  tabindex="0">Saturn</a>
+    <a href="#uranus"  tabindex="0">Uranus</a>
+    <a href="#neptune" tabindex="0">Neptune</a>
+    <a href="#pluto"   tabindex="0">Pluto</a>
+  </nav>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- SUN HERO -->
+  <section class="sun-hero" id="sun">
+    <div class="sun-viewport">
+      <div class="sun-corona"></div>
+      <div class="sun-halo-1"></div>
+      <div class="sun-halo-2"></div>
+      <div class="sun-body" onclick="openPanel('sun')" tabindex="0" role="button" aria-label="Sun" style="cursor:pointer">
+        <div class="sun-spin"></div>
+        <div class="sun-highlight"></div>
+        <div class="sun-spot-1"></div>
+        <div class="sun-spot-2"></div>
+      </div>
+    </div>
+
+    <button class="planet-label reveal" onclick="openPanel('sun')" tabindex="0">SUN</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.08s">The blazing heart of our solar system</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── MERCURY ── -->
+  <section class="planet-section" id="mercury">
+    <div class="planet-card planet-float reveal" onclick="openPanel('mercury')" tabindex="0" role="button" aria-label="Mercury" style="width:124px;height:124px">
+      <div class="ring" style="width:146px;height:146px;border-color:rgba(180,155,130,0.38);opacity:0.4"></div>
+      <div class="ring" style="width:162px;height:162px;border-color:rgba(180,155,130,0.16);opacity:0.3"></div>
+      <div class="planet-body" style="width:72px;height:72px;
+        background:radial-gradient(circle at 33% 28%,#cebdad 0%,#9d8a7a 38%,#72615a 72%,#4a3e36 100%);
+        box-shadow:inset -9px -7px 22px rgba(0,0,0,0.58),0 0 18px rgba(0,0,0,0.4)">
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('mercury')" style="transition-delay:0.06s">MERCURY</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Closest to the Sun · 88 day orbit</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── VENUS ── -->
+  <section class="planet-section" id="venus">
+    <div class="planet-card planet-float reveal" onclick="openPanel('venus')" tabindex="0" role="button" aria-label="Venus" style="width:140px;height:140px;animation-delay:0.4s">
+      <div class="ring" style="width:162px;height:162px;border-color:rgba(225,178,60,0.4);opacity:0.4"></div>
+      <div class="ring" style="width:178px;height:178px;border-color:rgba(225,178,60,0.16);opacity:0.3"></div>
+      <div class="planet-body" style="width:90px;height:90px;
+        background:radial-gradient(circle at 33% 28%,#f8de78 0%,#ecc040 38%,#c8920e 72%,#8a6000 100%);
+        box-shadow:inset -11px -9px 26px rgba(0,0,0,0.5),0 0 28px rgba(232,180,40,0.28),0 0 56px rgba(232,180,40,0.1)">
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('venus')" style="transition-delay:0.06s">VENUS</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Hottest planet · Dense atmosphere</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── EARTH ── -->
+  <section class="planet-section" id="earth">
+    <div class="planet-card planet-float reveal" onclick="openPanel('earth')" tabindex="0" role="button" aria-label="Earth" style="width:152px;height:152px;animation-delay:0.8s">
+      <div class="ring" style="width:174px;height:174px;border-color:rgba(48,152,220,0.42);opacity:0.4"></div>
+      <div class="ring" style="width:190px;height:190px;border-color:rgba(48,152,220,0.16);opacity:0.3"></div>
+      <div class="planet-body" style="width:100px;height:100px;position:relative;overflow:hidden;
+        background:radial-gradient(circle at 33% 28%,#62e4f8 0%,#1e98d8 32%,#0e66ba 62%,#083690 100%);
+        box-shadow:inset -13px -10px 30px rgba(0,0,0,0.5),0 0 32px rgba(30,152,216,0.32),0 0 64px rgba(30,152,216,0.12)">
+        <div style="position:absolute;top:18%;left:18%;width:28px;height:22px;background:rgba(52,180,80,0.52);border-radius:45% 55% 50% 50%;filter:blur(2px)"></div>
+        <div style="position:absolute;top:52%;left:56%;width:22px;height:28px;background:rgba(52,180,80,0.44);border-radius:50% 40% 55% 45%;filter:blur(2px)"></div>
+        <div style="position:absolute;top:28%;left:62%;width:14px;height:10px;background:rgba(52,180,80,0.36);border-radius:50%;filter:blur(2px)"></div>
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('earth')" style="transition-delay:0.06s">EARTH</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Our home · The blue marble</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── MARS ── -->
+  <section class="planet-section" id="mars">
+    <div class="planet-card planet-float reveal" onclick="openPanel('mars')" tabindex="0" role="button" aria-label="Mars" style="width:130px;height:130px;animation-delay:0.2s">
+      <div class="ring" style="width:152px;height:152px;border-color:rgba(215,72,44,0.42);opacity:0.4"></div>
+      <div class="ring" style="width:168px;height:168px;border-color:rgba(215,72,44,0.16);opacity:0.3"></div>
+      <div class="planet-body" style="width:82px;height:82px;position:relative;overflow:hidden;
+        background:radial-gradient(circle at 33% 28%,#ec8462 0%,#cc5030 42%,#941e10 75%,#601008 100%);
+        box-shadow:inset -10px -8px 24px rgba(0,0,0,0.55),0 0 24px rgba(200,72,40,0.28),0 0 48px rgba(200,72,40,0.1)">
+        <div style="position:absolute;top:12%;left:54%;width:18px;height:12px;background:rgba(255,210,190,0.3);border-radius:50%;filter:blur(2px)"></div>
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('mars')" style="transition-delay:0.06s">MARS</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">The red planet · Two moons</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── JUPITER ── -->
+  <section class="planet-section" id="jupiter">
+    <div class="planet-card planet-float reveal" onclick="openPanel('jupiter')" tabindex="0" role="button" aria-label="Jupiter" style="width:188px;height:188px;animation-delay:0.5s">
+      <div class="ring" style="width:210px;height:210px;border-color:rgba(198,148,78,0.42);opacity:0.4"></div>
+      <div class="ring" style="width:228px;height:228px;border-color:rgba(198,148,78,0.16);opacity:0.3"></div>
+      <div class="planet-body" style="width:136px;height:136px;position:relative;overflow:hidden;
+        box-shadow:inset -16px -14px 38px rgba(0,0,0,0.5),0 0 38px rgba(198,148,78,0.28),0 0 76px rgba(198,148,78,0.1)">
+        <!-- Jupiter bands -->
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+          #c8986a 0%,#e8c090 7%,#b87850 14%,
+          #f2d4a4 21%,#c89060 28%,#e4b880 35%,
+          #b47040 42%,#d8a870 49%,#c09060 56%,
+          #e2c090 63%,#b07040 70%,#daa060 77%,
+          #c08050 84%,#d8a870 91%,#b87850 100%)">
+        </div>
+        <!-- Great Red Spot -->
+        <div style="position:absolute;top:46%;left:62%;transform:translate(-50%,-50%);
+          width:32px;height:22px;
+          background:radial-gradient(ellipse,rgba(198,55,18,0.85),rgba(155,35,8,0.55));
+          border-radius:50%;filter:blur(1.5px)">
+        </div>
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('jupiter')" style="transition-delay:0.06s">JUPITER</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Largest planet · Great Red Spot</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── SATURN ── -->
+  <section class="planet-section" id="saturn">
+    <!-- Saturn needs special layout for rings -->
+    <div class="reveal" style="position:relative;width:220px;height:180px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.42s cubic-bezier(0.34,1.56,0.64,1)"
+      onclick="openPanel('saturn')" tabindex="0" role="button" aria-label="Saturn"
+      onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'"
+      onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1.06)'">
+
+      <!-- Ring system behind planet -->
+      <div style="position:absolute;width:210px;height:50px;border-radius:50%;
+        border: 11px solid transparent;
+        border-top:9px solid rgba(195,162,90,0.6);
+        border-bottom:9px solid rgba(195,162,90,0.6);
+        top:50%;transform:translateY(-50%) rotateX(72deg);z-index:1">
+      </div>
+      <div style="position:absolute;width:240px;height:60px;border-radius:50%;
+        border: 5px solid transparent;
+        border-top:4px solid rgba(195,150,70,0.32);
+        border-bottom:4px solid rgba(195,150,70,0.32);
+        top:50%;transform:translateY(-50%) rotateX(72deg);z-index:1">
+      </div>
+
+      <!-- Saturn body -->
+      <div class="planet-body" style="width:118px;height:118px;position:relative;overflow:hidden;z-index:2;
+        box-shadow:inset -14px -12px 34px rgba(0,0,0,0.5),0 0 34px rgba(200,168,95,0.25),0 0 68px rgba(200,168,95,0.1)">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+          #eed698 0%,#d8c070 18%,#caa852 36%,
+          #dcb870 54%,#c8a050 72%,#ba8840 90%,#a87830 100%)">
+        </div>
+      </div>
+
+      <!-- Ring front over planet -->
+      <div style="position:absolute;width:210px;height:50px;border-radius:50%;
+        border: 11px solid transparent;
+        border-bottom:8px solid rgba(180,145,72,0.65);
+        top:50%;transform:translateY(-50%) rotateX(72deg);z-index:3">
+      </div>
+    </div>
+
+    <button class="planet-label reveal" onclick="openPanel('saturn')" style="transition-delay:0.06s">SATURN</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Lord of the rings · 146 moons</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── URANUS ── -->
+  <section class="planet-section" id="uranus">
+    <div class="planet-card planet-float reveal" onclick="openPanel('uranus')" tabindex="0" role="button" aria-label="Uranus" style="width:156px;height:156px;animation-delay:0.6s">
+      <div class="ring" style="width:178px;height:178px;border-color:rgba(88,218,204,0.42);opacity:0.4"></div>
+      <div class="ring" style="width:194px;height:194px;border-color:rgba(88,218,204,0.16);opacity:0.3"></div>
+      <div class="planet-body" style="width:104px;height:104px;
+        background:radial-gradient(circle at 33% 28%,#b8f4ec 0%,#58d8ca 32%,#26b0a0 62%,#0c8878 100%);
+        box-shadow:inset -13px -10px 28px rgba(0,0,0,0.5),0 0 28px rgba(88,218,204,0.28),0 0 56px rgba(88,218,204,0.1)">
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('uranus')" style="transition-delay:0.06s">URANUS</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Ice giant · Rotates on its side</p>
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── NEPTUNE ── -->
+  <section class="planet-section" id="neptune" style="padding-bottom:20px">
+    <div class="planet-card planet-float reveal" onclick="openPanel('neptune')" tabindex="0" role="button" aria-label="Neptune" style="width:150px;height:150px;animation-delay:0.1s">
+      <div class="ring" style="width:172px;height:172px;border-color:rgba(44,78,224,0.5);opacity:0.45"></div>
+      <div class="ring" style="width:188px;height:188px;border-color:rgba(44,78,224,0.2);opacity:0.3"></div>
+      <div class="planet-body" style="width:100px;height:100px;position:relative;overflow:hidden;
+        background:radial-gradient(circle at 33% 28%,#62a6fc 0%,#2858e4 36%,#1438c4 65%,#081ca8 100%);
+        box-shadow:inset -13px -10px 28px rgba(0,0,0,0.55),0 0 36px rgba(44,88,228,0.4),0 0 72px rgba(44,88,228,0.18)">
+        <div style="position:absolute;top:36%;left:36%;width:24px;height:16px;background:rgba(210,225,255,0.22);border-radius:50%;filter:blur(2px)"></div>
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('neptune')" style="transition-delay:0.06s">NEPTUNE</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Farthest planet · Fastest winds</p>
+
+    <div class="divider"></div>
+  </section>
+
+  <!-- ── PLUTO ── -->
+  <section class="planet-section" id="pluto" style="padding-bottom:20px">
+    <div class="planet-card planet-float reveal" onclick="openPanel('pluto')" tabindex="0" role="button" aria-label="Pluto" style="width:110px;height:110px;animation-delay:0.7s">
+      <div class="ring" style="width:130px;height:130px;border-color:rgba(195,155,120,0.38);opacity:0.4"></div>
+      <div class="ring" style="width:146px;height:146px;border-color:rgba(195,155,120,0.15);opacity:0.3"></div>
+      <div class="planet-body" style="width:66px;height:66px;position:relative;overflow:hidden;
+        background:radial-gradient(circle at 33% 28%,#e8c8a8 0%,#c49878 38%,#9a7050 68%,#6a4830 100%);
+        box-shadow:inset -8px -6px 18px rgba(0,0,0,0.6),0 0 16px rgba(180,130,90,0.22),0 0 32px rgba(180,130,90,0.08)">
+        <!-- Tombaugh Regio heart patch -->
+        <div style="position:absolute;top:30%;left:28%;width:22px;height:18px;background:rgba(240,210,185,0.55);border-radius:40% 60% 55% 45%;filter:blur(2px)"></div>
+      </div>
+    </div>
+    <button class="planet-label reveal" onclick="openPanel('pluto')" style="transition-delay:0.06s">PLUTO</button>
+    <p class="planet-subtitle reveal" style="transition-delay:0.12s">Dwarf planet · Kuiper Belt</p>
+
+    <!-- MORE button -->
+    <button class="btn-more reveal" style="transition-delay:0.18s" onclick="showMore()">
+      MORE &nbsp;▾
+    </button>
+
+    <!-- Footer -->
+    <p style="margin-top:44px;font-size:11px;color:rgba(140,120,200,0.35);letter-spacing:0.1em;text-align:center" class="reveal" style="transition-delay:0.24s">
+      COSMICAL · EXPLORE THE UNIVERSE
+    </p>
+    <div style="height:40px"></div>
+  </section>
+
+</main>
+
+<!-- ── DETAIL PANEL ── -->
+<div class="panel-overlay" id="panel" role="dialog" aria-modal="true">
+  <div class="panel-bg" onclick="closePanel()"></div>
+  <div class="panel-card" id="panelCard">
+    <button class="panel-close" onclick="closePanel()" aria-label="Close">✕</button>
+    <div id="panelContent"></div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────
+// STAR FIELD
+// ─────────────────────────────
+(function() {
+  const sf = document.getElementById('starField');
+  const frag = document.createDocumentFragment();
+
+  // Regular small stars
+  for (let i = 0; i < 340; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.2 + 0.4;
+    const lo   = (Math.random() * 0.3 + 0.1).toFixed(2);
+    s.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${(Math.random()*100).toFixed(2)}%;
+      top:${(Math.random()*100).toFixed(2)}%;
+      --d:${(Math.random()*4+2).toFixed(1)}s;
+      --lo:${lo};
+      --delay:-${(Math.random()*6).toFixed(1)}s;
+    `;
+    frag.appendChild(s);
+  }
+
+  // Larger accent stars with a faint glow
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = (Math.random() * 2.0 + 3.2).toFixed(1); // 3.2–5.2px
+    const lo   = (Math.random() * 0.2 + 0.5).toFixed(2); // brighter
+    const hue  = Math.random() < 0.4 ? '200,230,255' : '255,255,255'; // some blue-white
+    s.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${(Math.random()*100).toFixed(2)}%;
+      top:${(Math.random()*100).toFixed(2)}%;
+      background:rgb(${hue});
+      box-shadow:0 0 ${(parseFloat(size)*2).toFixed(0)}px rgba(${hue},0.5);
+      --d:${(Math.random()*5+3).toFixed(1)}s;
+      --lo:${lo};
+      --delay:-${(Math.random()*8).toFixed(1)}s;
+    `;
+    frag.appendChild(s);
+  }
+
+  sf.appendChild(frag);
+})();
+
+// ─────────────────────────────
+// SHOOTING STARS
+// ─────────────────────────────
+(function() {
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+
+  function launchStar() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Angle: 25–45° downward left-to-right
+    const angle = rand(25, 45);
+    const rad   = angle * Math.PI / 180;
+
+    // Length: 80–180px
+    const len = rand(80, 180);
+
+    // Start anywhere along top 70% of screen, left 80% of width
+    const sx = rand(0, vw * 0.8);
+    const sy = rand(0, vh * 0.55);
+
+    // Travel distance: 120–260px in the direction of angle
+    const dist = rand(120, 260);
+    const dx = Math.cos(rad) * dist;
+    const dy = Math.sin(rad) * dist;
+
+    // Peak opacity: subtle — 0.35 to 0.65
+    const peak = rand(0.35, 0.65).toFixed(2);
+
+    // Duration: 0.6–1.1s
+    const dur = rand(0.6, 1.1).toFixed(2);
+
+    const el = document.createElement('div');
+    el.className = 'shooting-star';
+    el.style.cssText = `
+      --len:${len}px;
+      --sx:${sx}px; --sy:${sy}px;
+      --ex:${sx + dx}px; --ey:${sy + dy}px;
+      --angle:${angle}deg;
+      --peak:${peak};
+      --dur:${dur}s;
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  }
+
+  function scheduleNext() {
+    // Fire 1 star (occasionally 2) every 4–13 seconds
+    const delay = rand(4000, 13000);
+    setTimeout(() => {
+      launchStar();
+      // 25% chance of a quick second star 0.3–0.8s later
+      if (Math.random() < 0.25) {
+        setTimeout(launchStar, rand(300, 800));
+      }
+      scheduleNext();
+    }, delay);
+  }
+
+  // Stagger the first one so it doesn't fire immediately on load
+  setTimeout(scheduleNext, rand(2000, 5000));
+})();
+
+// ─────────────────────────────
+// SCROLL REVEAL
+// ─────────────────────────────
+const io = new IntersectionObserver(entries => {
+  entries.forEach((e, idx) => {
+    if (e.isIntersecting) {
+      const delay = parseFloat(e.target.style.transitionDelay) || 0;
+      setTimeout(() => e.target.classList.add('in'), delay * 1000);
+      io.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ─────────────────────────────
+// DRAWER
+// ─────────────────────────────
+const drawer  = document.getElementById('drawer');
+const overlay = document.getElementById('drawerOverlay');
+const openD   = () => { drawer.classList.add('open'); overlay.classList.add('open'); };
+const closeD  = () => { drawer.classList.remove('open'); overlay.classList.remove('open'); };
+document.getElementById('menuBtn').addEventListener('click', openD);
+document.getElementById('drawerClose').addEventListener('click', closeD);
+overlay.addEventListener('click', closeD);
+drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  closeD();
+  const t = document.querySelector(a.getAttribute('href'));
+  if (t) setTimeout(() => t.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+}));
+
+// ─────────────────────────────
+// PLANET DATA
+// ─────────────────────────────
+const PLANETS = {
+  sun: {
+    name: 'SUN',
+    accentColor: '#ff8c00',
+    bg: 'conic-gradient(from 0deg,#ff4500 0%,#ff6b00 15%,#ff9800 28%,#ffbe00 40%,#ff8800 55%,#ff4800 65%,#ff7a00 78%,#ffaa00 88%,#ff4500 100%)',
+    glow: 'rgba(255,140,0,0.32)',
+    desc: 'The Sun is the star at the center of the Solar System — a nearly perfect sphere of hot plasma. Its internal convective motion generates a powerful magnetic field through a dynamo process.',
+    stats: [
+      { l: 'AGE',         v: '4.6 billion years' },
+      { l: 'RADIUS',      v: '695,508 km' },
+      { l: 'TEMPERATURE', v: '5,778 K surface' },
+      { l: 'MASS',        v: '1.989 × 10³⁰ kg' },
+    ],
+    fact: 'The Sun contains 99.86% of all the mass in the entire Solar System.',
+  },
+  mercury: {
+    name: 'MERCURY',
+    accentColor: '#b8a090',
+    bg: 'radial-gradient(circle at 33% 28%,#cebdad 0%,#9d8a7a 38%,#72615a 72%,#4a3e36 100%)',
+    glow: 'rgba(185,160,140,0.25)',
+    desc: 'Mercury is the smallest and innermost planet. Despite being closest to the Sun, extreme temperature swings occur due to the lack of a meaningful atmosphere to retain heat.',
+    stats: [
+      { l: 'DIAMETER',        v: '4,879 km' },
+      { l: 'ORBIT',           v: '88 Earth days' },
+      { l: 'MOONS',           v: '0' },
+      { l: 'DISTANCE TO SUN', v: '57.9M km' },
+    ],
+    fact: 'A single day on Mercury lasts 59 Earth days — yet a year is only 88.',
+  },
+  venus: {
+    name: 'VENUS',
+    accentColor: '#e8b820',
+    bg: 'radial-gradient(circle at 33% 28%,#f8de78 0%,#ecc040 38%,#c8920e 72%,#8a6000 100%)',
+    glow: 'rgba(232,184,40,0.28)',
+    desc: 'Venus is the second planet from the Sun and the hottest in the Solar System. Its dense CO₂ atmosphere creates a runaway greenhouse effect, raising surface temperatures above 460°C.',
+    stats: [
+      { l: 'DIAMETER',     v: '12,104 km' },
+      { l: 'ORBIT',        v: '225 Earth days' },
+      { l: 'MOONS',        v: '0' },
+      { l: 'SURFACE TEMP', v: '~465°C' },
+    ],
+    fact: 'Venus rotates backwards and so slowly that a day there is longer than a year.',
+  },
+  earth: {
+    name: 'EARTH',
+    accentColor: '#1e98d8',
+    bg: 'radial-gradient(circle at 33% 28%,#62e4f8 0%,#1e98d8 32%,#0e66ba 62%,#083690 100%)',
+    glow: 'rgba(30,152,216,0.3)',
+    desc: 'Earth is the only known planet to harbor life. Our home is distinguished by liquid water, a protective magnetic field, a nitrogen-oxygen atmosphere, and a single large Moon.',
+    stats: [
+      { l: 'DIAMETER',     v: '12,742 km' },
+      { l: 'ORBIT',        v: '365.25 days' },
+      { l: 'MOONS',        v: '1' },
+      { l: 'SURFACE TEMP', v: '~15°C avg' },
+    ],
+    fact: 'Earth is the densest planet in the Solar System at 5.51 g/cm³.',
+  },
+  mars: {
+    name: 'MARS',
+    accentColor: '#cc5030',
+    bg: 'radial-gradient(circle at 33% 28%,#ec8462 0%,#cc5030 42%,#941e10 75%,#601008 100%)',
+    glow: 'rgba(200,72,40,0.28)',
+    desc: 'Mars is the fourth planet, known as the Red Planet due to iron oxide on its surface. It hosts Olympus Mons — the tallest volcano in the Solar System — and Valles Marineris, the deepest canyon.',
+    stats: [
+      { l: 'DIAMETER',     v: '6,779 km' },
+      { l: 'ORBIT',        v: '687 Earth days' },
+      { l: 'MOONS',        v: 'Phobos & Deimos' },
+      { l: 'SURFACE TEMP', v: '–63°C avg' },
+    ],
+    fact: 'Olympus Mons on Mars stands 21 km high — nearly 3× the height of Everest.',
+  },
+  jupiter: {
+    name: 'JUPITER',
+    accentColor: '#c89060',
+    bg: 'linear-gradient(135deg,#c8986a 0%,#e8c090 25%,#b87850 50%,#f0d0a0 75%,#c89060 100%)',
+    glow: 'rgba(198,148,78,0.28)',
+    desc: 'Jupiter is the largest planet — a gas giant with no solid surface. Its Great Red Spot is a storm wider than Earth that has persisted for hundreds of years.',
+    stats: [
+      { l: 'DIAMETER',      v: '139,820 km' },
+      { l: 'ORBIT',         v: '11.86 Earth years' },
+      { l: 'MOONS',         v: '95' },
+      { l: 'GREAT RED SPOT',v: '1.3× Earth\'s width' },
+    ],
+    fact: 'Jupiter\'s mass exceeds that of all other planets combined by 2.5×.',
+  },
+  saturn: {
+    name: 'SATURN',
+    accentColor: '#d0a858',
+    bg: 'linear-gradient(135deg,#eed698 0%,#d8c070 30%,#caa852 60%,#a87830 100%)',
+    glow: 'rgba(208,168,88,0.25)',
+    desc: 'Saturn is the sixth planet and the least dense — it would float in water. Its magnificent ring system spans 282,000 km but is only metres to a kilometre thick.',
+    stats: [
+      { l: 'DIAMETER',   v: '116,460 km' },
+      { l: 'ORBIT',      v: '29.5 Earth years' },
+      { l: 'MOONS',      v: '146' },
+      { l: 'RING SPAN',  v: '282,000 km' },
+    ],
+    fact: 'Saturn\'s rings are made of billions of pieces of ice and rock — some as small as a grain of sand, others as large as a house.',
+  },
+  uranus: {
+    name: 'URANUS',
+    accentColor: '#58d8ca',
+    bg: 'radial-gradient(circle at 33% 28%,#b8f4ec 0%,#58d8ca 32%,#26b0a0 62%,#0c8878 100%)',
+    glow: 'rgba(88,218,204,0.28)',
+    desc: 'Uranus is an ice giant tilted at 97.8°, effectively rolling around the Sun on its side. It has the coldest planetary atmosphere in the Solar System despite not being the farthest planet.',
+    stats: [
+      { l: 'DIAMETER',   v: '50,724 km' },
+      { l: 'ORBIT',      v: '84 Earth years' },
+      { l: 'MOONS',      v: '28' },
+      { l: 'AXIAL TILT', v: '97.8°' },
+    ],
+    fact: 'Uranus\'s atmosphere reaches –224°C — the coldest measured in the Solar System.',
+  },
+  neptune: {
+    name: 'NEPTUNE',
+    accentColor: '#2858e4',
+    bg: 'radial-gradient(circle at 33% 28%,#62a6fc 0%,#2858e4 36%,#1438c4 65%,#081ca8 100%)',
+    glow: 'rgba(44,88,228,0.35)',
+    desc: 'Neptune is the farthest planet from the Sun and hosts the most ferocious winds in the Solar System — over 2,100 km/h. It was the first planet predicted mathematically before being observed.',
+    stats: [
+      { l: 'DIAMETER',   v: '49,244 km' },
+      { l: 'ORBIT',      v: '165 Earth years' },
+      { l: 'MOONS',      v: '16' },
+      { l: 'WIND SPEED', v: '2,100 km/h' },
+    ],
+    fact: 'Neptune was discovered in 1846 based purely on mathematical predictions about Uranus\'s orbit.',
+  },
+  pluto: {
+    name: 'PLUTO',
+    accentColor: '#c49878',
+    bg: 'radial-gradient(circle at 33% 28%,#e8c8a8 0%,#c49878 38%,#9a7050 68%,#6a4830 100%)',
+    glow: 'rgba(180,130,90,0.25)',
+    desc: 'Pluto is a dwarf planet in the Kuiper Belt, reclassified from the ninth planet in 2006. It has a heart-shaped nitrogen ice plain called Tombaugh Regio and a surprisingly complex atmosphere.',
+    stats: [
+      { l: 'DIAMETER',        v: '2,377 km' },
+      { l: 'ORBIT',           v: '248 Earth years' },
+      { l: 'MOONS',           v: '5 (Charon & others)' },
+      { l: 'DISTANCE TO SUN', v: '5.9 billion km' },
+    ],
+    fact: 'Charon, Pluto\'s largest moon, is so big relative to Pluto that they orbit each other as a binary system.',
+  },
+};
+
+// ─────────────────────────────
+// DETAIL PANEL
+// ─────────────────────────────
+function openPanel(id) {
+  const p = PLANETS[id];
+  if (!p) return;
+  document.getElementById('panelContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="
+        width:150px;height:150px;border-radius:50%;margin:0 auto 18px;
+        background:${p.bg};
+        box-shadow:0 0 32px ${p.glow},inset -9px -7px 22px rgba(0,0,0,0.55)">
+      </div>
+      <h2 style="font-family:'Sora',sans-serif;font-size:26px;font-weight:800;
+        letter-spacing:0.07em;color:white;line-height:1">${p.name}</h2>
+    </div>
+    <p style="font-size:14px;line-height:1.72;color:rgba(220,210,255,0.82);margin-bottom:4px">${p.desc}</p>
+    <div class="stat-grid">
+      ${p.stats.map(s => `
+        <div class="stat-cell">
+          <div class="stat-label" style="color:${p.accentColor}">${s.l}</div>
+          <div class="stat-value">${s.v}</div>
+        </div>`).join('')}
+    </div>
+    <div class="fact-box">
+      <div class="fact-tag">GOOD TO KNOW</div>
+      <p style="font-size:13px;color:rgba(220,210,255,0.82);line-height:1.65">${p.fact}</p>
+    </div>
+  `;
+  document.getElementById('panel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanel();
+  if ((e.key === 'Enter' || e.key === ' ') && e.target === document.querySelector('.sun-body')) {
+    e.preventDefault(); openPanel('sun');
+  }
+});
+
+// ─────────────────────────────
+// MORE BUTTON
+// ─────────────────────────────
+function showMore() {
+  openPanel('sun'); // Scroll back to top and open sun for demo
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
